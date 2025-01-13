@@ -1,0 +1,14 @@
+{
+    "compilerOptions": {
+      "target": "esNext", // Set to the desired JavaScript version.
+      "module": "ESNext", // Modern modules for better tree-shaking.
+      "removeComments": true, // Remove comments.
+      "declaration": false, // Avoid emitting .d.ts files if not needed.
+      "outDir": "./dist", // Specify the output directory.
+      "sourceMap": false, // Disable source maps to reduce file size.
+      "noEmitHelpers": true, // Avoid helper duplication.
+      "importHelpers": true, // Use tslib for shared helper functions.
+      "downlevelIteration": false // Skip extra helpers for `for...of`.
+    },
+    "exclude": ["node_modules", "test"]
+  }
