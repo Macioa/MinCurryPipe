@@ -1,7 +1,7 @@
 {
     "compilerOptions": {
-      "target": "esNext", // Set to the desired JavaScript version.
-      "module": "ESNext", // Modern modules for better tree-shaking.
+      "target": "ES6", // Set to the desired JavaScript version.
+      "module": "CommonJS", // Modern modules for better tree-shaking.
       "removeComments": true, // Remove comments.
       "declaration": false, // Avoid emitting .d.ts files if not needed.
       "outDir": "./dist", // Specify the output directory.
