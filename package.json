@@ -1,6 +1,6 @@
 {
   "name": "mincurrypipe",
-  "version": "1.0.0",
+  "version": "1.0.5",
   "description": "Minimal curry and pipe",
   "main": "index.js",
   "module": "index.js",
@@ -9,6 +9,7 @@
   "scripts": {
     "build": "rm -rf dist/ && npx tsup && cp package.json dist/",
     "package": "cd dist && npm pack | xargs -I {} mv {} ..",
+    "pub": "npm run build && cd dist && npm publish --access public",
     "test": "jest"
   },
   "repository": {
