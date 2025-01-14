@@ -21,12 +21,12 @@ import { curried, pipe } from 'mincurrypipe';
 #####          use:
 ```js
               const CurriedAdd = curried(StandardAdd);
-              console.log(CurriedAdd(1)(2)); // 3
+              CurriedAdd(1)(2); // 3
 ```
 ```js
               const CurriedAdd3 = curried(StandardAdd3);
-              console.log(CurriedAdd3(1)(2,3)); // 6
-              console.log(CurriedAdd3(1)(2)(3)); // 6
+              CurriedAdd3(1)(2,3); // 6
+              CurriedAdd3(1)(2)(3); // 6
 ```
 
 ## pipe argument
