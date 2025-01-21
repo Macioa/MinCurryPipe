@@ -3,14 +3,19 @@
 Minimal curry and dynamic pipe
 
 ## Installation and usage
+
 ##### install:
+
 ```bash
 npm install mincurrypipe
 ```
+
 ##### import:
+
 ```js
 import { curried, pipe } from "mincurrypipe";
 ```
+
 ```js
 const { curried, pipe } = require("mincurrypipe");
 ```
@@ -93,14 +98,14 @@ const AltCurriedAdd = curried(StandardAdd);
 ##### use:
 
 ```js
-const PipedFunction = pipe(CurriedAdd(2), AltCurriedAdd(3));
+const PipedFunction = pipe(CurriedAdd(2), AltCurriedAdd(3)); // Function
 const result = PipedFunction(1); // 6
 ```
 
 ##### avoid:
 
 ```js
-const ErrorPipe = pipe(StandardAdd(1), StandardAdd(1));
+const ErrorPipe = pipe(StandardAdd(1), StandardAdd(1)); // Function
 const errorResult = ErrorPipe(1); // Error
 ```
 
@@ -113,9 +118,11 @@ const errorResult = ErrorPipe(1); // Error
 ##### with:
 
 ```js
-const AsyncValue = Promise.resolve(1);
+const PromisedValue = (v) => Promise.resolve(v);
+const StandardAdd = (a, b) => a + b;
 const AsyncAdd = (a, b) => Promise.resolve(a + b);
 
+const CurriedAdd = curried(StandardAdd);
 const CurriedAsyncAdd = (a) => (b) => Promise.resolve(a + b);
 const AltCurriedAsyncAdd = curried(AsyncAdd);
 ```
@@ -123,12 +130,18 @@ const AltCurriedAsyncAdd = curried(AsyncAdd);
 ##### use:
 
 ```js
-const PipedFunction = pipe(CurriedAsyncAdd(2), AltCurriedAsyncAdd(3));
-const result = PipedFunction(1); // Promise
+const PromiseOne = PromisedValue(1) // Promise
+const result = pipe(PromiseOne, CurriedAdd(2)); // Promise
 await result; // 6
 ```
 
 ```js
 const result = pipe(1, CurriedAsyncAdd(2), AltCurriedAsyncAdd(3)); // Promise
+await result; // 6
+```
+
+```js
+const PipedFunction = pipe(CurriedAsyncAdd(2), AltCurriedAsyncAdd(3)); // Function
+const result = PipedFunction(1); // Promise
 await result; // 6
 ```
