@@ -132,7 +132,7 @@ const AltCurriedAsyncAdd = curried(AsyncAdd);
 ```js
 const PromiseOne = PromisedValue(1) // Promise
 const result = pipe(PromiseOne, CurriedAdd(2)); // Promise
-await result; // 6
+await result; // 3
 ```
 
 ```js
