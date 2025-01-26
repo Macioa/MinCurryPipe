@@ -1,5 +1,37 @@
+// An interface for standard function calls expressed as an array to avoid invocation and allow a partial function to be formed.
+//    Ex: CurriedAdd(1) | [StandardAdd, 1]
+type CurriedProps = Function | [Function, ...args: any[]];
+type CurriedFn = ((...args: any[]) => CurriedFn) & {
+  arity?: number;
+  args?: number;
+};
+// Reusable interface for all pipe functions in MinCurryPipe
 interface PipeFn {
-  (...args: [any, ...Function[]]): any;
+  (...args: [CurriedProps | any, ...CurriedProps[]]): any;
+}
+
+class PipeError extends Error {
+  constructor(
+    message: string = null,
+    name: string = null,
+    arity: number = null,
+    received: number = null
+  ) {
+    const m = [
+      message || "Function failed in pipe:",
+      name || "",
+      arity && received ? `Expected(${arity}), Received(${received+1})` : "",
+    ].join("\n\t");
+    super(m);
+    this.name = "PipeError";
+    const stack = this.stack.split("\n");
+    const newStack = [...stack.slice(0, 3), ...stack.slice(-2)].join("\n");
+    Object.defineProperty(this, "stack", {
+      value: newStack,
+      writable: true,
+      configurable: true,
+    });
+  }
 }
 
 /* curried => Convert a function to a curried function.
@@ -12,13 +44,59 @@ interface PipeFn {
                 const CurriedAdd3 = curried(StandardAdd3);
                 console.log(CurriedAdd3(1)(2,3)); // 6
     */
+const curried = (fn: Function): CurriedFn => {
+  const arity = fn.length;
+  const curry = (...argsList: any[]) => {
+    const args = argsList.length;
 
-const curried = (fn: Function) => {
-  const curry = (...args: any[]) =>
-    args.length >= fn.length
-      ? fn(...args)
-      : (...nextArgs: any[]) => curry(...args, ...nextArgs);
-  return curry;
+    if (args > arity) throw new PipeError(null, fn?.name, arity, args);
+    if (args == arity && typeof fn == "function") return fn(...argsList);
+
+    const nextCurry = (...nextArgs: any[]) => curry(...argsList, ...nextArgs);
+    Object.defineProperty(nextCurry, "name", { value: `partial_${fn.name}` });
+    Object.assign(nextCurry, { arity, args });
+
+    return new Proxy(nextCurry, {
+      apply(target, thisArg, argArray) {
+        if (args + argArray.length - 1 > arity)
+          throw new PipeError(null, fn?.name, arity, args + argArray.length);
+        return Reflect.apply(target, thisArg, argArray);
+      },
+      get: (target, prop) =>
+        prop === "name" ? `partial_${fn.name}` : target[prop],
+    });
+  };
+
+  Object.defineProperty(curry, "name", { value: `curried_${fn.name}` });
+  Object.assign(curry, { arity });
+
+  return curry as CurriedFn;
+};
+
+const curryAll = (list: any[]) => {
+  const isStandardFunction = (v) =>
+    Array.isArray(v) && typeof v[0] === "function";
+  const isProperArity = (v) => v.length === v[0].length;
+  return list.map((v) => {
+    if (isStandardFunction(v) && isProperArity(v)) {
+      const [fn, ...args] = v;
+      return curried(fn)(...args);
+    } else if (isStandardFunction(v) && !isProperArity(v)) {
+      throw new PipeError(null, v[0]?.name, v[0]?.length, v?.length - 1);
+    }
+    return v;
+  });
+};
+
+const asyncTryFn = (fn, v) => {
+  try {
+    const res = v?.then ? (async () => fn(await v))() : fn(v);
+    if (typeof res === "function")
+      throw new PipeError(null, fn?.name, fn?.arity, fn?.received);
+    return res;
+  } catch (e) {
+    throw new PipeError(null, fn?.name, fn?.arity, fn?.received);
+  }
 };
 
 /* pipeArg => Pipe an object or value through a series of curried functions.
@@ -39,9 +117,7 @@ const curried = (fn: Function) => {
                 const errorResult = pipe(1, StandardAdd(1)) // Error
     */
 const pipeArg: PipeFn = (initialValue: any, ...fns: Function[]) =>
-  fns.reduce((acc, fn) => {
-    return acc.then ? (async () => fn(await acc))() : fn(acc);
-  }, initialValue);
+  fns.reduce((acc, fn) => asyncTryFn(fn, acc), initialValue);
 
 /* pipeFns => Pipe a series of curried functions together.
             Example:
@@ -59,14 +135,17 @@ const pipeArg: PipeFn = (initialValue: any, ...fns: Function[]) =>
                 const ErrorPipe = pipeFns(StandardAdd(1), StandardAdd(1)) 
                 const errorResult = ErrorPipe(1) // Error
     */
-const pipeFns: PipeFn =
-  (...fns: Function[]) =>
-  (x: any) =>
-    fns.reduce((v, f) => (v.then ? (async () => f(await v))() : f(v)), x);
+const pipeFns: PipeFn = (...fns: Function[]) => {
+  const newFn = (x: any) => fns.reduce((v, f) => asyncTryFn(f, v), x);
+  Object.defineProperty(newFn, "name", {
+    value: `pipe(${fns.map((f) => f.name).join(", ")})`,
+  });
+  return newFn
+};
 
 /* pipe => Dynamically pipeFns or pipeArg */
 const pipe: PipeFn = (...args: [any, ...Function[]]) => {
-  const [firstArg, ...fns] = args;
+  const [firstArg, ...fns] = curryAll(args);
   const type = firstArg?.then ? "promise" : typeof firstArg;
 
   if (type == "promise") return (async () => pipeArg(await firstArg, ...fns))();
@@ -74,5 +153,5 @@ const pipe: PipeFn = (...args: [any, ...Function[]]) => {
   else return pipeArg(firstArg, ...fns);
 };
 
-export type { PipeFn };
-export { pipe, curried };
+export type { PipeFn, CurriedProps, CurriedFn };
+export { pipe, curried, PipeError };

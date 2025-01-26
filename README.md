@@ -130,7 +130,7 @@ const AltCurriedAsyncAdd = curried(AsyncAdd);
 ##### use:
 
 ```js
-const PromiseOne = PromisedValue(1) // Promise
+const PromiseOne = PromisedValue(1); // Promise
 const result = pipe(PromiseOne, CurriedAdd(2)); // Promise
 await result; // 3
 ```
@@ -144,4 +144,68 @@ await result; // 6
 const PipedFunction = pipe(CurriedAsyncAdd(2), AltCurriedAsyncAdd(3)); // Function
 const result = PipedFunction(1); // Promise
 await result; // 6
+```
+
+## auto curry
+
+#### Pass standard functions and their partial arguments as arrays to avoid immediate invocation and allow piping
+
+#### Example:
+
+##### with:
+
+```js
+const StandardAdd = (a, b) => a + b;
+```
+
+##### use:
+
+```js
+const result = pipe(1, [StandardAdd, 2], [StandardAdd, 3]); // 6
+const RunPipe = pipe([StandardAdd, 2], [StandardAdd, 3]); // Function
+RunPipe(1) // 6
+```
+
+## function naming
+
+#### When using the curried function or auto conversion, generated curried and partial functions will be named curried_ORIGINALFN or partial_ORIGINALFN
+
+#### Example:
+
+##### with:
+
+```js
+const StandardAdd = (a, b) => a + b;
+const CurriedAdd = curried(StandardAdd)
+const AddOne = CurriedAdd(1)
+```
+
+##### use:
+
+```js
+console.log(CurriedAdd) // [Function curried_StandardAdd] {arity: 2}
+console.log(AddOne) // [Function partial_StandardAdd] {arity: 2, args: 1}
+```
+
+## error handling
+
+#### When using the curried or pipe functions, error messages are provided to show where functions failed.
+
+#### Example:
+
+##### with:
+
+```js
+const StandardAdd = (a, b) => a + b;
+```
+
+##### use:
+
+```js
+pipe(1, [StandardAdd, 2, 3])
+/*
+PipeError: Function failed in pipe:
+        StandardAdd3
+        Expected(3), Received(2)
+*/
 ```
