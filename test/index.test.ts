@@ -120,7 +120,7 @@ test("pipe provides meaningful error messages for auto curried excess arity prob
     (e) => {
       expect(e).toBeInstanceOf(PipeError);
       expect(e.message).toContain("StandardAdd");
-      expect(e.message).toContain("Expected(2), Received(3)")
+      expect(e.message).toContain("Expected(2), Received(3)");
     }
   );
 
@@ -132,7 +132,7 @@ test("pipe provides meaningful error messages for auto curried excess arity prob
     (e) => {
       expect(e).toBeInstanceOf(PipeError);
       expect(e.message).toContain("StandardAdd");
-      expect(e.message).toContain("Expected(2), Received(3)")
+      expect(e.message).toContain("Expected(2), Received(3)");
     }
   );
 });
@@ -144,7 +144,7 @@ test("pipe provides meaningful error messages for auto curried insufficient arit
     (e) => {
       expect(e).toBeInstanceOf(PipeError);
       expect(e.message).toContain("StandardAdd3");
-      expect(e.message).toContain("Expected(3), Received(2)")
+      expect(e.message).toContain("Expected(3), Received(2)");
     }
   );
 
@@ -156,7 +156,7 @@ test("pipe provides meaningful error messages for auto curried insufficient arit
     (e) => {
       expect(e).toBeInstanceOf(PipeError);
       expect(e.message).toContain("StandardAdd3");
-      expect(e.message).toContain("Expected(3), Received(2)")
+      expect(e.message).toContain("Expected(3), Received(2)");
     }
   );
 });
@@ -166,11 +166,12 @@ test("pipe provides meaningful error messages for manually curried excess arity 
   const CurriedAdd = curried(StandardAdd);
 
   Try(
-    () => pipe(1, CurriedAdd(2)(3, 4)),
+    () => pipe(1, CurriedAdd(2, 3), CurriedAdd(3, 4, 5)),
     (e) => {
       expect(e).toBeInstanceOf(PipeError);
-      // expect(e.message).toContain("partial_StandardAdd");
-      // expect(e.message).toContain("Expected(3), Received(4)")
+      console.log(e.message);
+      expect(e.message).toContain("StandardAdd");
+      expect(e.message).toContain("Expected(3)");
     }
   );
   Try(
@@ -180,8 +181,8 @@ test("pipe provides meaningful error messages for manually curried excess arity 
     },
     (e) => {
       expect(e).toBeInstanceOf(PipeError);
-      // expect(e.message).toContain("partial_StandardAdd");
-      // expect(e.message).toContain("Expected(3), Received(6)")
+      expect(e.message).toContain("StandardAdd");
+      expect(e.message).toContain("Expected(3), Received(5)");
     }
   );
 });
@@ -193,8 +194,8 @@ test("pipe provides meaningful error messages for manually curried insufficent a
     () => pipe(1, CurriedAdd3(2)),
     (e) => {
       expect(e).toBeInstanceOf(PipeError);
-      // expect(e.message).toContain("partial_StandardAdd3");
-      // expect(e.message).toContain("Expected(3), Received(2)")
+      expect(e.message).toContain("partial_StandardAdd3");
+      expect(e.message).toContain("Expected(3), Received(2)");
     }
   );
   Try(
@@ -204,8 +205,8 @@ test("pipe provides meaningful error messages for manually curried insufficent a
     },
     (e) => {
       expect(e).toBeInstanceOf(PipeError);
-      // expect(e.message).toContain("partial_StandardAdd3");
-      // expect(e.message).toContain("Expected(3), Received(2)")
+      expect(e.message).toContain("partial_StandardAdd3");
+      expect(e.message).toContain("Expected(3), Received(2)");
     }
   );
 });

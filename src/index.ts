@@ -14,13 +14,16 @@ class PipeError extends Error {
   constructor(
     message: string = null,
     name: string = null,
-    arity: number = null,
-    received: number = null
+    arity: number | string = null,
+    args: number | string = null
   ) {
+    args = typeof args == "number" ? args + 1 : args;
+    const arityS = arity ? `Expected(${arity})` : "";
+    const argsS = arity && args ? `, Received(${args})` : "";
     const m = [
       message || "Function failed in pipe:",
       name || "",
-      arity && received ? `Expected(${arity}), Received(${received+1})` : "",
+      `${arityS}${argsS}`,
     ].join("\n\t");
     super(m);
     this.name = "PipeError";
@@ -50,6 +53,7 @@ const curried = (fn: Function): CurriedFn => {
     const args = argsList.length;
 
     if (args > arity) throw new PipeError(null, fn?.name, arity, args);
+
     if (args == arity && typeof fn == "function") return fn(...argsList);
 
     const nextCurry = (...nextArgs: any[]) => curry(...argsList, ...nextArgs);
@@ -62,8 +66,6 @@ const curried = (fn: Function): CurriedFn => {
           throw new PipeError(null, fn?.name, arity, args + argArray.length);
         return Reflect.apply(target, thisArg, argArray);
       },
-      get: (target, prop) =>
-        prop === "name" ? `partial_${fn.name}` : target[prop],
     });
   };
 
@@ -81,9 +83,8 @@ const curryAll = (list: any[]) => {
     if (isStandardFunction(v) && isProperArity(v)) {
       const [fn, ...args] = v;
       return curried(fn)(...args);
-    } else if (isStandardFunction(v) && !isProperArity(v)) {
+    } else if (isStandardFunction(v) && !isProperArity(v))
       throw new PipeError(null, v[0]?.name, v[0]?.length, v?.length - 1);
-    }
     return v;
   });
 };
@@ -92,10 +93,10 @@ const asyncTryFn = (fn, v) => {
   try {
     const res = v?.then ? (async () => fn(await v))() : fn(v);
     if (typeof res === "function")
-      throw new PipeError(null, fn?.name, fn?.arity, fn?.received);
+      throw new PipeError(null, fn?.name, fn?.arity, fn?.args);
     return res;
   } catch (e) {
-    throw new PipeError(null, fn?.name, fn?.arity, fn?.received);
+    throw new PipeError(null, fn?.name, fn?.arity, fn?.args);
   }
 };
 
@@ -116,8 +117,17 @@ const asyncTryFn = (fn, v) => {
   
                 const errorResult = pipe(1, StandardAdd(1)) // Error
     */
-const pipeArg: PipeFn = (initialValue: any, ...fns: Function[]) =>
-  fns.reduce((acc, fn) => asyncTryFn(fn, acc), initialValue);
+const pipeArg: PipeFn = (initialValue: any, ...fns: CurriedFn[]) =>
+  fns.reduce((acc, fn, i) => {
+    if (typeof fn != "function") {
+      fn = fns
+        .slice(0, i)
+        .reverse()
+        .find((f) => typeof f == "function");
+      throw new PipeError(null, fn?.name, fn?.arity, null);
+    }
+    return asyncTryFn(fn, acc);
+  }, initialValue);
 
 /* pipeFns => Pipe a series of curried functions together.
             Example:
@@ -140,7 +150,7 @@ const pipeFns: PipeFn = (...fns: Function[]) => {
   Object.defineProperty(newFn, "name", {
     value: `pipe(${fns.map((f) => f.name).join(", ")})`,
   });
-  return newFn
+  return newFn;
 };
 
 /* pipe => Dynamically pipeFns or pipeArg */
