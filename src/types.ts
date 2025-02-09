@@ -125,18 +125,6 @@ type GetType<T> = T extends number
   ? { [K in keyof T]: GetType<T[K]> }
   : T;
 
-const myFn = (a: number, b: string, c: boolean) => a + b + c;
-const myFnCur = (a: number) => (b: string) => (c: boolean) => a + b + c;
-const myFnArr = [typeof myFn, 1, "2"];
-type T = CurriedFn<typeof myFn, [1, "2"]>;
-type T1 = ArrayToCurried<[typeof myFn, 1, "2"]>;
-type Test = PropToCurried<[typeof myFn, 1, "2"]>;
-type Test1 = PropToCurried<typeof myFnCur>;
-type Test2 = PropToCurried<typeof myFn>;
-
-type z = IsFnAsArray<[typeof myFn, 1, "2"]>;
-// const y: PipeProp = myFnCur(1)
-
 export type {
   AnyFn,
   Take,
