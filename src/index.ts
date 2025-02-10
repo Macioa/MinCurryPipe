@@ -56,7 +56,7 @@ const curried = (fn: Function): CurriedFn => {
 
     if (args == arity && typeof fn == "function") return fn(...argsList);
 
-    const nextCurry = (...nextArgs: any[]) => curry(...argsList, ...nextArgs);
+    const nextCurry = (...nextArgs: any[]) => curry(...nextArgs, ...argsList);
     Object.defineProperty(nextCurry, "name", { value: `partial_${fn.name}` });
     Object.assign(nextCurry, { arity, args });
 
