@@ -11,16 +11,76 @@ type Take<NegArr extends any[], FromArr extends any[]> = NegArr extends [
   ? FromArr extends [infer FirstFA, ...infer RestFA]
     ? FirstNA extends FirstFA
       ? Take<RestNA, RestFA>
-      : [FirstFA, ...Take<NegArr, RestFA>]
+      : [
+          "TypeError",
+          `Expected (${ToString<FirstFA>}). Got (${ToString<FirstNA>}).`,
+          never
+        ]
     : []
   : FromArr;
 
+type TakeLast<NegArr extends any[], FromArr extends any[]> = Take<
+  Reverse<NegArr>,
+  Reverse<FromArr>
+> extends infer Res
+  ? Res extends [infer _n, infer _m, "TypeError"]
+    ? Res
+    : Reverse<List<Res>>
+  : never;
+
+type Reverse<T extends any[]> = T extends [infer First, ...infer Rest]
+  ? [...Reverse<Rest>, First]
+  : [];
+
 type List<T> = T extends any[] ? T : [T];
 
-type CurriedFn<Fn extends AnyFn, Args extends any[] = []> = InterperetCurried<
-  Fn,
-  Args
-> & {
+type InterperetCurried<
+  Fn extends AnyFn,
+  UsedArgs extends any[] = []
+> = Fn extends (...p: infer FnArgs) => infer FnRes
+  ? { RemArgs: TakeLast<UsedArgs, FnArgs> } extends {
+      RemArgs: infer RemArgs;
+    }
+    ? RemArgs extends ["TypeError", ...infer error]
+      ? ["TypeError", ...error]
+      : RemArgs extends []
+      ? FnRes
+      : MapArgsToCurriedFns<Fn, ArgSlices<List<RemArgs>>>
+    : never
+  : never;
+
+type MapArgsToCurriedFns<
+  Fn extends AnyFn,
+  SplitArgsList extends any[]
+> = Fn extends (...p: infer _FnArgs) => infer FnRes
+  ? SplitArgsList extends [infer First, ...infer RestA]
+    ? First extends [infer RemArgs, infer UsedArgs]
+      ? UsedArgs extends []
+        ? MapArgsToCurriedFns<Fn, RestA> | ((...p: List<RemArgs>) => FnRes)
+        :
+            | MapArgsToCurriedFns<Fn, RestA>
+            | ((
+                ...p: List<UsedArgs>
+              ) => MapArgsToCurriedFns<Fn, ArgSlices<List<RemArgs>>>)
+      : never
+    : never
+  : never;
+
+type ArgSlices<T extends any[]> = T extends [infer First, ...infer Rest]
+  ? [[[...T], []], ...ArgSlicesInner<[First], Rest>]
+  : [];
+
+type ArgSlicesInner<Left extends any[], Right extends any[]> = Right extends [
+  infer First,
+  ...infer Rest
+]
+  ? [[[...Left], [...Right]], ...ArgSlicesInner<[...Left, First], Rest>]
+  : [];
+
+type CurriedFn<
+  Fn extends AnyFn,
+  UsedArgs extends any[] = []
+> = InterperetCurried<Fn, UsedArgs> & {
   name?: string;
   parentFn?: AnyFn;
   arity?: number;
@@ -70,39 +130,6 @@ type PropToCurried<T> = T extends FnAsArray
   ? T
   : never;
 
-type InterperetCurried<
-  Fn extends AnyFn,
-  UsedArgs extends any[] = [],
-  NextArgs extends any[] = []
-> = Fn extends (...p: infer FnArgs) => infer FnRes
-  ? {
-      UsedArgsT: GetType<UsedArgs>;
-      NextArgsT: GetType<NextArgs>;
-    } extends { UsedArgsT: infer UsedArgsT; NextArgsT: infer NextArgsT }
-    ? {
-        RemainingArgs: Take<[...List<UsedArgsT>, ...List<NextArgsT>], FnArgs>;
-      } extends {
-        RemainingArgs: infer RemainingArgs;
-      }
-      ? RemainingArgs extends []
-        ? FnRes
-        : RemainingArgs extends [infer FirstRA, ...infer RestRA]
-        ? RestRA extends []
-          ? (p: FirstRA) => FnRes
-          : (
-              ...p: [FirstRA, ...Partial<RestRA>]
-            ) =>
-              | InterperetCurried<
-                  Fn,
-                  [...List<UsedArgsT>, ...List<NextArgsT>],
-                  [FirstRA]
-                >
-              | FnRes
-        : never
-      : never
-    : never
-  : never;
-
 type GetType<T> = T extends number
   ? number
   : T extends string
@@ -124,6 +151,24 @@ type GetType<T> = T extends number
   : T extends object
   ? { [K in keyof T]: GetType<T[K]> }
   : T;
+
+type ToString<T> = T extends string
+  ? "string"
+  : T extends number
+  ? "number"
+  : T extends boolean
+  ? "boolean"
+  : T extends bigint
+  ? "bigint"
+  : T extends symbol
+  ? "symbol"
+  : T extends undefined
+  ? "undefined"
+  : T extends null
+  ? "null"
+  : T extends Function
+  ? "function"
+  : "object";
 
 export type {
   AnyFn,

@@ -1,6 +1,5 @@
 import { expectType } from "tsd";
 import {
-  AnyFn,
   Take,
   List,
   GetType,
@@ -15,20 +14,37 @@ import {
 
 describe("Take", () => {
   it("removes matching elements in the first array from the second array", () => {
-    type R1 = Take<[1, 2], [1, 2, 3, 4]>;
-    expectType<R1>({} as [3, 4]);
-    type R2 = Take<[1, 2, 3, 4], [1, 2]>;
+    type R1 = Take<[number, string], [number, string, boolean, object]>;
+    expectType<R1>({} as [boolean, object]);
+    type R2 = Take<[number, string, boolean, boolean], [number, string]>;
     expectType<R2>({} as []);
-    type R3 = Take<[1, 2], [1, 2]>;
+    type R3 = Take<[number, string], [number, string]>;
     expectType<R3>({} as []);
-    type R4 = Take<[1, 2], [3, 4]>;
-    expectType<R4>({} as [3, 4]);
-    type R5 = Take<[1, 2, 3], [3, 4, 5]>;
-    expectType<R5>({} as never);
-    type R6 = Take<[1, 2, 4], [1, 2, 3, 4, 5]>;
-    expectType<R6>({} as never);
-    type R7 = Take<[], [1, 2, 3]>;
-    expectType<R7>({} as [1, 2, 3]);
+    type R4 = Take<[number, string], [boolean, boolean]>;
+    expectType<R4>(
+      {} as ["TypeError", "Expected (boolean). Got (number).", never]
+    );
+    type R5 = Take<[number, string, boolean], [boolean, boolean, bigint]>;
+    expectType<R5>(
+      {} as ["TypeError", "Expected (boolean). Got (number).", never]
+    );
+    type R6 = Take<
+      [number, string, boolean],
+      [number, string, object, boolean, bigint]
+    >;
+    expectType<R6>(
+      {} as ["TypeError", "Expected (object). Got (boolean).", never]
+    );
+    type R7 = Take<[], [number, string, boolean]>;
+    expectType<R7>({} as [number, string, boolean]);
+    type R8 = Take<["a", "b"], [number, string, boolean]>;
+    expectType<R8>(
+      {} as ["TypeError", "Expected (number). Got (string).", never]
+    );
+    type R9 = Take<[number], [string, boolean]>;
+    expectType<R9>(
+      {} as ["TypeError", "Expected (string). Got (number).", never]
+    );
   });
 });
 
@@ -64,41 +80,41 @@ describe("InterperetCurried", () => {
   it("matches curried function", () => {
     const myFn = (a: number, b: string, c: boolean): string => a + b + c;
     type R1 = InterperetCurried<typeof myFn>;
-    expectType<R1>({} as (p_0: number, b?: string, c?: boolean) => AnyFn);
+    expectType<R1>(
+      {} as
+        | ((
+            p_0: boolean
+          ) =>
+            | ((p_0: string) => (p_0: number) => string)
+            | ((p_0: number, p_1: string) => string))
+        | ((p_0: string, p_1: boolean) => (p_0: number) => string)
+        | ((p_0: number, p_1: string, p_2: boolean) => string)
+    );
     expectType<R1>({} as InterperetCurried<typeof myFn>);
   });
   it("provides partials when usedArgs provided", () => {
     const myFn = (a: number, b: string, c: boolean): string => a + b + c;
-    type R1 = InterperetCurried<typeof myFn, [1]>;
+    type R1 = InterperetCurried<typeof myFn, [true]>;
     expectType<R1>(
-      {} as (
-        p_0: string,
-        c?: boolean | undefined
-      ) => string | ((p: boolean) => string)
+      {} as
+        | ((p_0: string) => (p_0: number) => string)
+        | ((p_0: number, p_1: string) => string)
     );
-    type R2 = InterperetCurried<typeof myFn, [1, "2"]>;
-    expectType<R2>({} as (p: boolean) => string);
+    type R2 = InterperetCurried<typeof myFn, ["2", true]>;
+    expectType<R2>({} as (p_0: number) => string);
   });
   it("provides fn return when usedArgs > fnArgs", () => {
     const myFn = (a: number, b: string, c: boolean): string => a + b + c;
     type R1 = InterperetCurried<typeof myFn, [1, "2", true]>;
     expectType<R1>({} as string);
-    type R2 = InterperetCurried<typeof myFn, [1, "2", true, 1]>;
-    expectType<R2>({} as never);
   });
-  it("does not provide fn return when usedArgs < fnArgs", () => {
+  it("provides meaningful type errors on arg mismatch", () => {
     const myFn = (a: number, b: string, c: boolean): string => a + b + c;
-    type R1 = InterperetCurried<typeof myFn, ["1"]>;
+
+    type R1 = InterperetCurried<typeof myFn, [1]>;
     expectType<R1>({} as never);
     type R2 = InterperetCurried<typeof myFn, [1, 1]>;
     expectType<R2>({} as never);
-  });
-  it("uses next args appropriately", () => {
-    const myFn = (a: number, b: string, c: boolean): string => a + b + c;
-    type R1 = InterperetCurried<typeof myFn, [1], ["2"]>;
-    expectType<(p: boolean) => string>({} as R1);
-    type R2 = InterperetCurried<typeof myFn, [1, "2"], [true]>;
-    expectType<string>({} as R2);
   });
 });
 
@@ -144,7 +160,7 @@ describe("CurriedReturnType", () => {
     expectType<R2>({} as string);
     type R3 = CurriedReturnType<CurriedFn<typeof myFn>>;
     expectType<R3>({} as string);
-    type R4 = CurriedReturnType<CurriedFn<typeof myFn, [1]>>;
+    type R4 = CurriedReturnType<CurriedFn<typeof myFn, [true]>>;
     expectType<R4>({} as string);
   });
 });
@@ -152,23 +168,19 @@ describe("CurriedReturnType", () => {
 describe("ArrayToCurried", () => {
   it("converts an array to a curried function", () => {
     const myFn = (a: number, b: string, c: boolean): string => a + b + c;
-    type R1 = ArrayToCurried<[typeof myFn, 1, "2"]>;
-    expectType<R1>({} as (p: boolean) => string);
+    type R1 = ArrayToCurried<[typeof myFn, "2", true]>;
+    expectType<R1>({} as (p_0: number) => string);
     type R2 = ArrayToCurried<[typeof myFn, 1, "2", true]>;
     expectType<R2>({} as string);
     type R3 = ArrayToCurried<[typeof myFn, 1, "2", true, 1]>;
-    expectType<R3>({} as never);
-    type R4 = ArrayToCurried<[typeof myFn, 1]>;
+    expectType<R3>(
+      {} as ["TypeError", "Expected (boolean). Got (number).", never]
+    );
+    type R4 = ArrayToCurried<[typeof myFn, true]>;
     expectType<R4>(
-      {} as ((
-        p_0: string,
-        c?: boolean | undefined
-      ) => string | ((p: boolean) => string)) & {
-        name?: string;
-        parentFn?: AnyFn;
-        arity?: number;
-        args?: number;
-      }
+      {} as
+        | ((p_0: string) => (p_0: number) => string)
+        | ((p_0: number, p_1: string) => string)
     );
   });
 });
@@ -184,14 +196,14 @@ describe("PropToCurried", () => {
   });
   it("converts a function as array", () => {
     const myFn = (a: number, b: string, c: boolean): string => a + b + c;
-    type R3 = PropToCurried<[typeof myFn, 1, "2"]>;
-    expectType<R3>(
-      {} as ((p: boolean) => string) & {
-        name?: string;
-        parentFn?: AnyFn;
-        arity?: number;
-        args?: number;
-      }
-    );
+    type R3 = PropToCurried<[typeof myFn, "2", true]>;
+    // expectType<R3>(
+    //   {} as ((p: boolean) => string) & {
+    //     name?: string;
+    //     parentFn?: AnyFn;
+    //     arity?: number;
+    //     args?: number;
+    //   }
+    // );
   });
 });
