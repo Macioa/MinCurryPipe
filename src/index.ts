@@ -1,11 +1,9 @@
 import PipeError from "./pipe_error";
+import { AnyFn, CurriedFn } from "./types";
 // An interface for standard function calls expressed as an array to avoid invocation and allow a partial function to be formed.
 //    Ex: CurriedAdd(1) | [StandardAdd, 1]
 type CurriedProps = Function | [Function, ...args: any[]];
-type CurriedFn = ((...args: any[]) => CurriedFn) & {
-  arity?: number;
-  args?: number;
-};
+
 // Reusable interface for all pipe functions in MinCurryPipe
 interface PipeFn {
   (...args: [CurriedProps | any, ...CurriedProps[]]): any;
@@ -21,7 +19,7 @@ interface PipeFn {
                 const CurriedAdd3 = curried(StandardAdd3);
                 console.log(CurriedAdd3(1)(2,3)); // 6
     */
-const curried = (fn: Function): CurriedFn => {
+const curried = (fn: AnyFn): CurriedFn<AnyFn> => {
   const arity = fn.length;
   const curry = (...argsList: any[]) => {
     const args = argsList.length;
@@ -30,7 +28,10 @@ const curried = (fn: Function): CurriedFn => {
 
     if (args == arity && typeof fn == "function") return fn(...argsList);
 
-    const nextCurry = (...nextArgs: any[]) => curry(...argsList, ...nextArgs);
+    const nextCurry = (...nextArgs: any[]) => {
+      const newArgs = [...argsList, ...nextArgs];
+      return curry(...newArgs) as CurriedFn<typeof fn, typeof newArgs>;
+    };
     Object.defineProperty(nextCurry, "name", { value: `partial_${fn.name}` });
     Object.assign(nextCurry, { arity, args });
 
@@ -46,7 +47,7 @@ const curried = (fn: Function): CurriedFn => {
   Object.defineProperty(curry, "name", { value: `curried_${fn.name}` });
   Object.assign(curry, { arity });
 
-  return curry as CurriedFn;
+  return curry as CurriedFn<typeof fn>;
 };
 
 const curryAll = (list: any[]) => {
@@ -91,7 +92,7 @@ const asyncTryFn = (fn, v) => {
   
                 const errorResult = pipe(1, StandardAdd(1)) // Error
     */
-const pipeArg: PipeFn = (initialValue: any, ...fns: CurriedFn[]) =>
+const pipeArg: PipeFn = (initialValue: any, ...fns: CurriedFn<AnyFn>[]) =>
   fns.reduce((acc, fn, i) => {
     if (typeof fn != "function") {
       fn = fns
@@ -119,7 +120,7 @@ const pipeArg: PipeFn = (initialValue: any, ...fns: CurriedFn[]) =>
                 const ErrorPipe = pipeFns(StandardAdd(1), StandardAdd(1)) 
                 const errorResult = ErrorPipe(1) // Error
     */
-const pipeFns: PipeFn = (...fns: Function[]) => {
+const pipeFns: PipeFn = (...fns: CurriedFn<AnyFn>[]) => {
   const newFn = (x: any) => fns.reduce((v, f) => asyncTryFn(f, v), x);
   Object.defineProperty(newFn, "name", {
     value: `pipe(${fns.map((f) => f.name).join(", ")})`,
