@@ -101,12 +101,17 @@ type IsCurriedFn<T extends any> = T extends (...args: any[]) => infer Return
 
 type IsFnAsArray<T extends any> = T extends [infer Fn, ...infer ProvidedArgs]
   ? Fn extends (...args: infer FnArgs) => any
-    ? ProvidedArgs extends Partial<FnArgs>
-      ? FnArgs extends Partial<ProvidedArgs>
-        ? ProvidedArgs extends FnArgs
-          ? false
-          : false
-        : true
+    ? {
+        RevProvided: Reverse<ProvidedArgs>;
+        RevFnArgs: Reverse<FnArgs>;
+      } extends { RevProvided: infer RevProvided; RevFnArgs: infer RevFnArgs }
+      ? RevProvided extends Partial<RevFnArgs>
+        ? RevFnArgs extends Partial<RevProvided>
+          ? RevProvided extends RevFnArgs
+            ? false
+            : false
+          : true
+        : false
       : false
     : false
   : false;

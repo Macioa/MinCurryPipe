@@ -140,8 +140,8 @@ describe("IsFnAsArray", () => {
     type R1 = IsFnAsArray<typeof myFn>;
     expectType<R1>({} as false);
     type R2 = IsFnAsArray<[typeof myFn, 1]>;
-    expectType<R2>({} as true);
-    type R3 = IsFnAsArray<[typeof myFn, 1, "2"]>;
+    expectType<R2>({} as false);
+    type R3 = IsFnAsArray<[typeof myFn, "2", true]>;
     expectType<R3>({} as true);
     type R4 = IsFnAsArray<[typeof myFn, 1, "2", true, 1]>;
     expectType<R4>({} as false);
@@ -197,13 +197,6 @@ describe("PropToCurried", () => {
   it("converts a function as array", () => {
     const myFn = (a: number, b: string, c: boolean): string => a + b + c;
     type R3 = PropToCurried<[typeof myFn, "2", true]>;
-    // expectType<R3>(
-    //   {} as ((p: boolean) => string) & {
-    //     name?: string;
-    //     parentFn?: AnyFn;
-    //     arity?: number;
-    //     args?: number;
-    //   }
-    // );
+    expectType<R3>({} as (p_0: number) => string);
   });
 });

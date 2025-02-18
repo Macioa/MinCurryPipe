@@ -1,3 +1,4 @@
+import PipeError from "./pipe_error";
 // An interface for standard function calls expressed as an array to avoid invocation and allow a partial function to be formed.
 //    Ex: CurriedAdd(1) | [StandardAdd, 1]
 type CurriedProps = Function | [Function, ...args: any[]];
@@ -8,33 +9,6 @@ type CurriedFn = ((...args: any[]) => CurriedFn) & {
 // Reusable interface for all pipe functions in MinCurryPipe
 interface PipeFn {
   (...args: [CurriedProps | any, ...CurriedProps[]]): any;
-}
-
-class PipeError extends Error {
-  constructor(
-    message: string = null,
-    name: string = null,
-    arity: number | string = null,
-    args: number | string = null
-  ) {
-    args = typeof args == "number" ? args + 1 : args;
-    const arityS = arity ? `Expected(${arity})` : "";
-    const argsS = arity && args ? `, Received(${args})` : "";
-    const m = [
-      message || "Function failed in pipe:",
-      name || "",
-      `${arityS}${argsS}`,
-    ].join("\n\t");
-    super(m);
-    this.name = "PipeError";
-    const stack = this.stack.split("\n");
-    const newStack = [...stack.slice(0, 3), ...stack.slice(-2)].join("\n");
-    Object.defineProperty(this, "stack", {
-      value: newStack,
-      writable: true,
-      configurable: true,
-    });
-  }
 }
 
 /* curried => Convert a function to a curried function.
