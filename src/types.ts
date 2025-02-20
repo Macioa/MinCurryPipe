@@ -1,4 +1,14 @@
+type DEBUG_MODE = false;
+
 type AnyFn = (...args: any[]) => any;
+type DebugNever<
+  E extends string,
+  Args extends any = []
+> = DEBUG_MODE extends true ? `DEBUG_NEVER: ${E}, ${ToString<Args>}` : never;
+type _DebugFalse<
+  E extends string,
+  Args extends any = []
+> = DEBUG_MODE extends true ? `DEBUG_FALSE: ${E}, ${ToString<Args>}` : false;
 
 type FnAsArray = [AnyFn, ...args: any[]];
 
@@ -26,7 +36,21 @@ type TakeLast<NegArr extends any[], FromArr extends any[]> = Take<
   ? Res extends [infer _n, infer _m, "TypeError"]
     ? Res
     : Reverse<List<Res>>
-  : never;
+  : DebugNever<"Res doesn't extend [m,n, 'TypeError'">;
+
+type IsAny<T> = 0 extends 1 & T ? true : false;
+type IsNever<T> = IsAny<T> extends false
+  ? T | "NEVER" extends "NEVER"
+    ? true
+    : false
+  : false;
+type IsError<T> = T extends [infer Type, infer Message, infer N]
+  ? [IsAny<Type>, IsAny<Message>, IsAny<N>] extends [false, false, false]
+    ? IsNever<N> extends true
+      ? true
+      : false
+    : false
+  : false;
 
 type Reverse<T extends any[]> = T extends [infer First, ...infer Rest]
   ? [...Reverse<Rest>, First]
@@ -41,13 +65,13 @@ type InterperetCurried<
   ? { RemArgs: TakeLast<UsedArgs, FnArgs> } extends {
       RemArgs: infer RemArgs;
     }
-    ? RemArgs extends ["TypeError", ...infer error]
-      ? ["TypeError", ...error]
+    ? IsError<RemArgs> extends true // extends ["TypeError", ...infer error] // ! Matches any
+      ? RemArgs
       : RemArgs extends []
       ? FnRes
-      : MapArgsToCurriedFns<Fn, ArgSlices<List<RemArgs>>>
-    : never
-  : never;
+      : MapArgsToCurriedFns<Fn, ArgSlices<List<RemArgs>>> // RemArgs | ArgSlices<List<RemArgs>>
+    : DebugNever<"Could not calc RemArgs">
+  : DebugNever<"Fn doesn't extend AnyFn">;
 
 type MapArgsToCurriedFns<
   Fn extends AnyFn,
@@ -55,19 +79,24 @@ type MapArgsToCurriedFns<
 > = Fn extends (...p: infer _FnArgs) => infer FnRes
   ? SplitArgsList extends [infer First, ...infer RestA]
     ? First extends [infer RemArgs, infer UsedArgs]
-      ? UsedArgs extends []
-        ? MapArgsToCurriedFns<Fn, RestA> | ((...p: List<RemArgs>) => FnRes)
-        :
-            | MapArgsToCurriedFns<Fn, RestA>
-            | ((
-                ...p: List<UsedArgs>
-              ) => MapArgsToCurriedFns<Fn, ArgSlices<List<RemArgs>>>)
-      : never
-    : never
-  : never;
+      ? RestA extends []
+        ? RemArgs extends []
+          ? (...p: List<UsedArgs>) => FnRes
+          : (
+              ...p: List<UsedArgs>
+            ) => MapArgsToCurriedFns<Fn, ArgSlices<List<RemArgs>>>
+        : RemArgs extends []
+        ? MapArgsToCurriedFns<Fn, RestA> & ((...p: List<UsedArgs>) => FnRes)
+        : MapArgsToCurriedFns<Fn, RestA> &
+            ((
+              ...p: List<UsedArgs>
+            ) => MapArgsToCurriedFns<Fn, ArgSlices<List<RemArgs>>>)
+      : DebugNever<"FirstArg doesn't extend [RemA, ...UsedA]", First>
+    : DebugNever<"ArgList doesn't extend [F, ...R]", SplitArgsList>
+  : DebugNever<"Fn doesn't extend AnyFn", Fn>;
 
 type ArgSlices<T extends any[]> = T extends [infer First, ...infer Rest]
-  ? [[[...T], []], ...ArgSlicesInner<[First], Rest>]
+  ? [[[], [...T]], ...ArgSlicesInner<[First], Rest>]
   : [];
 
 type ArgSlicesInner<Left extends any[], Right extends any[]> = Right extends [
@@ -124,16 +153,16 @@ type ArrayToCurried<T extends FnAsArray> = T extends [
     ? UsedArgs extends FnArgs
       ? FnRes
       : CurriedFn<Fn, GetType<UsedArgs>>
-    : never
-  : never;
+    : DebugNever<"UsedArgs doesnt extend FnArgs">
+  : DebugNever<"Fn doesn't extend AnyFn">;
 
 type PropToCurried<T> = T extends FnAsArray
   ? IsFnAsArray<T> extends true
     ? ArrayToCurried<T>
-    : never
+    : DebugNever<"T is not FnAsArray">
   : IsCurriedFn<T> extends true
   ? T
-  : never;
+  : DebugNever<"T is not curriedFn or FnAsArray">;
 
 type GetType<T> = T extends number
   ? number
@@ -178,6 +207,7 @@ type ToString<T> = T extends string
 export type {
   AnyFn,
   Take,
+  TakeLast,
   List,
   GetType,
   CurriedFn,

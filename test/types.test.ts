@@ -1,6 +1,7 @@
 import { expectType } from "tsd";
 import {
   Take,
+  TakeLast,
   List,
   GetType,
   CurriedFn,
@@ -45,6 +46,8 @@ describe("Take", () => {
     expectType<R9>(
       {} as ["TypeError", "Expected (string). Got (number).", never]
     );
+    type R10 = Take<[any, any], [any, any, any]>;
+    expectType<R10>({} as R10);
   });
 });
 
@@ -73,6 +76,8 @@ describe("GetType", () => {
     expectType<R3>({} as (a: number, b: string, c: boolean) => string);
     type R4 = GetType<(a: number, b: string, c: boolean) => string>;
     expectType<R4>({} as (a: number, b: string, c: boolean) => string);
+    type R5 = GetType<any>;
+    expectType<R5>({} as any);
   });
 });
 
@@ -81,14 +86,12 @@ describe("InterperetCurried", () => {
     const myFn = (a: number, b: string, c: boolean): string => a + b + c;
     type R1 = InterperetCurried<typeof myFn>;
     expectType<R1>(
-      {} as
-        | ((
-            p_0: boolean
-          ) =>
-            | ((p_0: string) => (p_0: number) => string)
-            | ((p_0: number, p_1: string) => string))
-        | ((p_0: string, p_1: boolean) => (p_0: number) => string)
-        | ((p_0: number, p_1: string, p_2: boolean) => string)
+      {} as ((
+        p_0: boolean
+      ) => ((p_0: string) => (p_0: number) => string) &
+        ((p_0: number, p_1: string) => string)) &
+        ((p_0: string, p_1: boolean) => (p_0: number) => string) &
+        ((p_0: number, p_1: string, p_2: boolean) => string)
     );
     expectType<R1>({} as InterperetCurried<typeof myFn>);
   });
@@ -96,9 +99,8 @@ describe("InterperetCurried", () => {
     const myFn = (a: number, b: string, c: boolean): string => a + b + c;
     type R1 = InterperetCurried<typeof myFn, [true]>;
     expectType<R1>(
-      {} as
-        | ((p_0: string) => (p_0: number) => string)
-        | ((p_0: number, p_1: string) => string)
+      {} as ((p_0: string) => (p_0: number) => string) &
+        ((p_0: number, p_1: string) => string)
     );
     type R2 = InterperetCurried<typeof myFn, ["2", true]>;
     expectType<R2>({} as (p_0: number) => string);
@@ -115,6 +117,15 @@ describe("InterperetCurried", () => {
     expectType<R1>({} as never);
     type R2 = InterperetCurried<typeof myFn, [1, 1]>;
     expectType<R2>({} as never);
+  });
+  it("works with implied any type", () => {
+    const myFn = (a, b) => `${a}:${b}`;
+
+    type R1 = InterperetCurried<typeof myFn>;
+    expectType<R1>(
+      {} as ((p_0: any) => (p_0: any) => string) &
+        ((p_0: any, p_1: any) => string)
+    );
   });
 });
 
@@ -178,9 +189,8 @@ describe("ArrayToCurried", () => {
     );
     type R4 = ArrayToCurried<[typeof myFn, true]>;
     expectType<R4>(
-      {} as
-        | ((p_0: string) => (p_0: number) => string)
-        | ((p_0: number, p_1: string) => string)
+      {} as ((p_0: string) => (p_0: number) => string) &
+        ((p_0: number, p_1: string) => string)
     );
   });
 });

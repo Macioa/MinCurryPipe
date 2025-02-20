@@ -19,7 +19,7 @@ interface PipeFn {
                 const CurriedAdd3 = curried(StandardAdd3);
                 console.log(CurriedAdd3(1)(2,3)); // 6
     */
-const curried = (fn: AnyFn): CurriedFn<AnyFn> => {
+const curried = <Fn extends AnyFn>(fn: Fn): CurriedFn<Fn> => {
   const arity = fn.length;
   const curry = (...argsList: any[]) => {
     const args = argsList.length;
@@ -28,10 +28,8 @@ const curried = (fn: AnyFn): CurriedFn<AnyFn> => {
 
     if (args == arity && typeof fn == "function") return fn(...argsList);
 
-    const nextCurry = (...nextArgs: any[]) => {
-      const newArgs = [...argsList, ...nextArgs];
-      return curry(...newArgs) as CurriedFn<typeof fn, typeof newArgs>;
-    };
+    const nextCurry = (...nextArgs: any[]) => curry(...nextArgs, ...argsList);
+
     Object.defineProperty(nextCurry, "name", { value: `partial_${fn.name}` });
     Object.assign(nextCurry, { arity, args });
 
@@ -47,7 +45,7 @@ const curried = (fn: AnyFn): CurriedFn<AnyFn> => {
   Object.defineProperty(curry, "name", { value: `curried_${fn.name}` });
   Object.assign(curry, { arity });
 
-  return curry as CurriedFn<typeof fn>;
+  return curry as CurriedFn<Fn>;
 };
 
 const curryAll = (list: any[]) => {
@@ -57,7 +55,7 @@ const curryAll = (list: any[]) => {
   return list.map((v) => {
     if (isStandardFunction(v) && isProperArity(v)) {
       const [fn, ...args] = v;
-      return curried(fn)(...args);
+      return (curried(fn) as CurriedFn<AnyFn>)(...args);
     } else if (isStandardFunction(v) && !isProperArity(v))
       throw new PipeError(null, v[0]?.name, v[0]?.length, v?.length - 1);
     return v;

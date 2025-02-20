@@ -178,6 +178,7 @@ describe("pipe", () => {
     );
     Try(
       () => {
+        //@ts-ignore
         const RunPipe = pipe(CurriedAdd(2)(3, 4, 5));
         return RunPipe(1);
       },
