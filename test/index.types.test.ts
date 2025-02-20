@@ -1,5 +1,5 @@
 import { expectType } from "tsd";
-import { curried, CurriedFn } from "../src";
+import { curried, CurriedFn, pipe } from "../src";
 import { AnyFn } from "../src/types";
 
 const myFn = (a: number, b: string, c: boolean, d: object) => {
@@ -109,5 +109,13 @@ describe("curried", () => {
 
     expectType<(p_0: any) => any>({} as typeof nestedPartialFn);
     expectType<any>({} as typeof result);
+  });
+});
+
+describe("pipe", () => {
+  it("interperets functions as arrays and detects arg errors", () => {
+    
+   //@ts-expect-error
+    pipe(1, [myFn, "2", true, {}])
   });
 });

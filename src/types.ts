@@ -204,6 +204,10 @@ type ToString<T> = T extends string
   ? "function"
   : "object";
 
+type PipeFunctions<Funcs extends AnyFn[]> = {
+  [Func of Funcs]: 
+}
+
 export type {
   AnyFn,
   Take,
