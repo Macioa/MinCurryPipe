@@ -11,7 +11,7 @@ const newPipeWarmer = () => {
     onStep: (...newStepFns) => addOnStep(warmer, ...newStepFns),
     pipe: basePipe,
     faultSafe: () => addFaultSafe(warmer),
-  } as PipeWarmerObj
+  } as PipeWarmerObj;
   return warmer;
 };
 
@@ -77,15 +77,18 @@ const addOnStep = (...args: [PipeWarmerObj, ...Function[]]) => {
   pipeWarmer.pipe = new Proxy(pipe, {
     apply(target, thisArg, argArray) {
       const proxiedArgs = argArray.map((fn, i) => {
-        return typeof fn === "function"
-          ? new Proxy(fn, {
-              apply(target, thisArg, argArray) {
-                const result = Reflect.apply(target, thisArg, argArray);
-                stepFns.forEach((stepFn) => stepFn(result, target, i));
-                return result;
-              },
-            })
-          : stepFns.forEach((stepFn) => stepFn(fn, fn, i));
+        if (typeof fn === "function") {
+          return new Proxy(fn, {
+            apply(target, thisArg, argArray) {
+              const result = Reflect.apply(target, thisArg, argArray);
+              stepFns.forEach((stepFn) => stepFn(result, target, i));
+              return result;
+            },
+          });
+        } else {
+          stepFns.forEach((stepFn) => stepFn(fn, fn, i));
+          return fn;
+        }
       });
       return Reflect.apply(target, thisArg, proxiedArgs);
     },
