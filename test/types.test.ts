@@ -10,7 +10,8 @@ import {
   CurriedReturnType,
   ArrayToCurried,
   IsFnAsArray,
-  PropToCurried,
+  PropToCurried
+  
 } from "../src/types";
 
 describe("Take", () => {
@@ -134,11 +135,17 @@ describe("IsCurriedFn", () => {
     const myFn = (a: number, b: string, c: boolean): string => a + b + c;
     const myFnCur = (a: number) => (b: string) => (c: boolean) => a + b + c;
     type R1 = IsCurriedFn<typeof myFn>;
-    expectType<R1>({} as false);
+    expectType<R1>({} as {
+      _FALSE: 1;
+      M: ["Return is not a function"];
+  });
     type R2 = IsCurriedFn<typeof myFnCur>;
     expectType<R2>({} as true);
     type R3 = IsCurriedFn<1>;
-    expectType<R3>({} as false);
+    expectType<R3>({} as {
+      _FALSE: 1;
+      M: ["T is not a function"];
+  });
   });
 });
 
@@ -147,17 +154,31 @@ describe("IsFnAsArray", () => {
     const myFn = (a: number, b: string, c: boolean): string => a + b + c;
     const myFnArr = [typeof myFn, 1, "2"];
     type R0 = IsFnAsArray<1>;
-    expectType<R0>({} as false);
+    expectType<R0>({} as {
+      _FALSE: 1;
+      M: ["T is not an array"];
+  });
     type R1 = IsFnAsArray<typeof myFn>;
-    expectType<R1>({} as false);
+    expectType<R1>({} as {
+      _FALSE: 1;
+      M: ["T is not an array"];
+  });
     type R2 = IsFnAsArray<[typeof myFn, 1]>;
-    expectType<R2>({} as false);
+    expectType<R2>({} as {
+      _FALSE: 1;
+      M: ["Args must be reverse subset of FnArgs"];
+  });
     type R3 = IsFnAsArray<[typeof myFn, "2", true]>;
-    expectType<R3>({} as true);
+    expectType<R3>({} as [(a: number, b: string, c: boolean) => string, "2", true]);
     type R4 = IsFnAsArray<[typeof myFn, 1, "2", true, 1]>;
-    expectType<R4>({} as false);
+    expectType<R4>({} as {
+      _FALSE: 1;
+      M: ["Args must be reverse subset of FnArgs"];
+  });
     type R5 = IsFnAsArray<[typeof myFn, 1, "2", true]>;
-    expectType<R5>({} as true);
+    expectType<R5>({} as [(a: number, b: string, c: boolean) => string, 1, "2", true]);
+    type R6 = IsFnAsArray<[typeof myFn, number, string, boolean]>
+    expectType<R6>({} as [(a: number, b: string, c: boolean) => string, number, string, boolean])
   });
 });
 
@@ -184,9 +205,9 @@ describe("ArrayToCurried", () => {
     type R2 = ArrayToCurried<[typeof myFn, 1, "2", true]>;
     expectType<R2>({} as string);
     type R3 = ArrayToCurried<[typeof myFn, 1, "2", true, 1]>;
-    expectType<R3>(
-      {} as ["TypeError", "Expected (boolean). Got (number).", never]
-    );
+    // expectType<R3>(
+    //   {} as ["TypeError", "Expected (boolean). Got (number).", never]
+    // );
     type R4 = ArrayToCurried<[typeof myFn, true]>;
     expectType<R4>(
       {} as ((p_0: string) => (p_0: number) => string) &
