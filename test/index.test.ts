@@ -110,7 +110,7 @@ describe("pipe", () => {
 
   it("accepts non-curried functions passed as arrays", async () => {
     const StandardAdd = (a, b) => a + b;
-    const result = pipe(1, [StandardAdd, 2]);
+    const result = pipe(1, [StandardAdd, 2] as const);
 
     expect(result.then).toBe(undefined);
     expect(result).toBe(3);
@@ -119,7 +119,7 @@ describe("pipe", () => {
   test("provides meaningful error messages for auto curried excess arity problems", () => {
     const StandardAdd = (a, b) => a + b;
     Try(
-      () => pipe(1, [StandardAdd, 2, 3]),
+      () => pipe(1, [StandardAdd, 2, 3] as const),
       (e) => {
         expect(e).toBeInstanceOf(PipeError);
         expect(e.message).toContain("StandardAdd");
@@ -143,7 +143,7 @@ describe("pipe", () => {
   test("provides meaningful error messages for auto curried insufficient arity problems", () => {
     const StandardAdd3 = (a, b, c) => a + b + c;
     Try(
-      () => pipe(1, [StandardAdd3, 2]),
+      () => pipe(1, [StandardAdd3, 2] as const),
       (e) => {
         expect(e).toBeInstanceOf(PipeError);
         expect(e.message).toContain("StandardAdd3");
