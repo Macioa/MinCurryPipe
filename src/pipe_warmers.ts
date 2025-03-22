@@ -1,4 +1,6 @@
 import { pipe as basePipe } from "./";
+import { curried } from "./index";
+import { AnyFn } from "./types";
 
 interface PipeWarmerObj {
   onStep: Function;
@@ -79,6 +81,16 @@ const addOnStep = (...args: [PipeWarmerObj, ...Function[]]) => {
       const proxiedArgs = argArray.map((fn, i) => {
         if (typeof fn === "function") {
           return new Proxy(fn, {
+            apply(target, thisArg, argArray) {
+              const result = Reflect.apply(target, thisArg, argArray);
+              stepFns.forEach((stepFn) => stepFn(result, target, i));
+              return result;
+            },
+          });
+        } else if (Array.isArray(fn)) {
+          const [F, ...args] = fn;
+          const curriedFunc = curried(F as AnyFn)(...args);
+          return new Proxy(curriedFunc, {
             apply(target, thisArg, argArray) {
               const result = Reflect.apply(target, thisArg, argArray);
               stepFns.forEach((stepFn) => stepFn(result, target, i));
