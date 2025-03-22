@@ -262,5 +262,6 @@ export type {
   ArgSlices,
   MapArgsToCurriedFns,
   ToString,
-  ValidatePipeFns
+  ValidatePipeFns,
+  PipeSim
 };

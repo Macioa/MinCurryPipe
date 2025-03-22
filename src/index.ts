@@ -1,5 +1,5 @@
 import PipeError from "./pipe_error";
-import { AnyFn, CurriedFn } from "./types";
+import { AnyFn, CurriedFn, ValidatePipeFns, PipeSim } from "./types";
 // An interface for standard function calls expressed as an array to avoid invocation and allow a partial function to be formed.
 //    Ex: CurriedAdd(1) | [StandardAdd, 1]
 type CurriedProps = Function | [Function, ...args: any[]];
@@ -21,7 +21,7 @@ interface PipeFn {
     */
 const curried = <Fn extends AnyFn>(fn: Fn): CurriedFn<Fn> => {
   const arity = fn.length;
-  const curry = (...argsList: any[]) => {
+  const curry: CurriedFn<AnyFn> = (...argsList: any[]) => {
     const args = argsList.length;
 
     if (args > arity) throw new PipeError(null, fn?.name, arity, args);
@@ -90,13 +90,16 @@ const asyncTryFn = (fn, v) => {
   
                 const errorResult = pipe(1, StandardAdd(1)) // Error
     */
-const pipeArg: PipeFn = (initialValue: any, ...fns: CurriedFn<AnyFn>[]) =>
+const pipeArg = <const T extends readonly (unknown[] | AnyFn)[], F extends any>(
+  ...[initialValue, ...fns]: [F, ...ValidatePipeFns<T, F>]
+) =>
   fns.reduce((acc, fn, i) => {
     if (typeof fn != "function") {
       fn = fns
         .slice(0, i)
         .reverse()
         .find((f) => typeof f == "function");
+      //@ts-ignore
       throw new PipeError(null, fn?.name, fn?.arity, null);
     }
     return asyncTryFn(fn, acc);
@@ -118,17 +121,22 @@ const pipeArg: PipeFn = (initialValue: any, ...fns: CurriedFn<AnyFn>[]) =>
                 const ErrorPipe = pipeFns(StandardAdd(1), StandardAdd(1)) 
                 const errorResult = ErrorPipe(1) // Error
     */
-const pipeFns: PipeFn = (...fns: CurriedFn<AnyFn>[]) => {
+const pipeFns = <const T extends readonly (unknown[] | AnyFn)[]>(
+  ...fns: [...PipeSim<T>]
+) => {
   const newFn = (x: any) => fns.reduce((v, f) => asyncTryFn(f, v), x);
   Object.defineProperty(newFn, "name", {
+    // @ts-ignore
     value: `pipe(${fns.map((f) => f.name).join(", ")})`,
   });
   return newFn;
 };
 
 /* pipe => Dynamically pipeFns or pipeArg */
-const pipe: PipeFn = (...args: [any, ...Function[]]) => {
-  const [firstArg, ...fns] = curryAll(args);
+const pipe = <const T extends readonly (unknown[] | AnyFn)[], F extends any>(
+  ...[F, ...P]: [F, ...ValidatePipeFns<T, F>]
+) => {
+  const [firstArg, ...fns] = curryAll([F, ...P]);
   const type = firstArg?.then ? "promise" : typeof firstArg;
 
   if (type == "promise") return (async () => pipeArg(await firstArg, ...fns))();
