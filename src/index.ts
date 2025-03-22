@@ -1,5 +1,7 @@
+import { onStep, faultSafe } from "./pipe_warmers";
 import PipeError from "./pipe_error";
 import { AnyFn, CurriedFn, ValidatePipeFns, PipeSim } from "./types";
+
 // An interface for standard function calls expressed as an array to avoid invocation and allow a partial function to be formed.
 //    Ex: CurriedAdd(1) | [StandardAdd, 1]
 type CurriedProps = Function | [Function, ...args: any[]];
@@ -145,4 +147,4 @@ const pipe = <const T extends readonly (unknown[] | AnyFn)[], F extends any>(
 };
 
 export type { PipeFn, CurriedProps, CurriedFn };
-export { pipe, curried, PipeError };
+export { pipe, curried, onStep, faultSafe, PipeError };
