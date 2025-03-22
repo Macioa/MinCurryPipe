@@ -21,16 +21,16 @@ interface PipeFn {
                 const CurriedAdd3 = curried(StandardAdd3);
                 console.log(CurriedAdd3(1)(2,3)); // 6
     */
-const curried = <Fn extends AnyFn>(fn: Fn): CurriedFn<Fn> => {
+const curried = <Fn extends AnyFn>(fn: Fn) => {
   const arity = fn.length;
-  const curry: CurriedFn<AnyFn> = (...argsList: any[]) => {
+  const curry = (...argsList: any[]) => {
     const args = argsList.length;
 
     if (args > arity) throw new PipeError(null, fn?.name, arity, args);
 
     if (args == arity && typeof fn == "function") return fn(...argsList);
 
-    const nextCurry = (...nextArgs: any[]) => curry(...nextArgs, ...argsList);
+    const nextCurry = (...nextArgs) => curry(...nextArgs, ...argsList);
     
     Object.defineProperty(nextCurry, "name", { value: `partial_${fn.name}` });
     Object.assign(nextCurry, { arity, args });
@@ -47,7 +47,7 @@ const curried = <Fn extends AnyFn>(fn: Fn): CurriedFn<Fn> => {
   Object.defineProperty(curry, "name", { value: `curried_${fn.name}` });
   Object.assign(curry, { arity });
 
-  return curry as CurriedFn<Fn>;
+  return curry as unknown as CurriedFn<Fn>;
 };
 
 const curryAll = (list: any[]) => {
