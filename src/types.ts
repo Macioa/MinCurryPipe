@@ -190,7 +190,7 @@ type EvaluateFunction<
 > = PropToCurried<Prop> extends (...p: infer FnArgs) => infer FnReturn
   ? LastReturn extends null
     ? [Prop, FnReturn]
-    : LastReturn extends FnArgs[0]
+    : GetType<LastReturn> extends GetType<FnArgs[0]>
     ? [Prop, FnReturn]
     : [
         FALSE<
@@ -253,6 +253,7 @@ export type {
   CurriedFn,
   IsCurriedFn,
   InterperetCurried,
+  EvaluateFunction,
   CurriedReturnType,
   FnAsArray,
   ArrayToCurried,

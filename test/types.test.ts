@@ -13,6 +13,7 @@ import {
   PropToCurried,
   ArgSlices,
   MapArgsToCurriedFns,
+  EvaluateFunction,
   AnyFn
 } from "../src/types";
 import { IsError } from "ts-neverfalse/error";
@@ -284,21 +285,20 @@ describe("ArgSlices", () => {
   });
 });
 
+describe("EvaluateCurried", () => {
+  it("evaluates curried functions", () => {
+    const myFn = (a: boolean, b: string, c: boolean): string => a + b + c;
+    const myProp = [myFn, "2", true] as const;
+    type R1 = EvaluateFunction<typeof myProp, boolean>;
+    expectType<R1>({} as [readonly [(a: boolean, b: string, c: boolean) => string, "2", true], string]);
+  })
+})
+
 describe("MapArgsToCurriedFns", () => {
   it("maps args to curried fns", () => {
     const myFn = (a: number, b: string, c: boolean): string => a + b + c;
     type SplitArgsList = ArgSlices<Parameters<typeof myFn>>;
     type R1 = MapArgsToCurriedFns<typeof myFn, SplitArgsList, false>;
-    type TEST = 
-    ((c: boolean) => ((p_0: string) => (p_0: number) => string) | ((p_0: number, p_1: string) => string)) | ((b: string, c: boolean) => (p_0: number) => string) | ((a: number, b: string, c: boolean) => string)
-    // ((
-    //   c: boolean
-    // ) => ((p_0: string) => (p_0: number) => string) &
-    //   ((p_0: number, p_1: string) => string)) &
-    //   ((b: string, c: boolean) => (p_0: number) => string) &
-    //   ((a: number, b: string, c: boolean) => string);
-  type IsTest<T> = T extends TEST ? true : false;
-  type TEST2 = IsTest<( c: boolean) => number>;
     expectType<R1>( {} as (a: number, b: string, c: boolean) => string );
 });
 })
@@ -312,7 +312,7 @@ describe("PropToCurried", () => {
     type R2 = PropToCurried<typeof myFnCur>;
     expectType<R2>({} as (a: number) => (b: string) => (c: boolean) => string);
   });
-  
+
   it("converts a function as array", () => {
     const myFn = (a: number, b: string, c: boolean): string => `${a}${b}${c}`;
     const myFn2 = (a: string, b: number): string => `${a}${b}`;
