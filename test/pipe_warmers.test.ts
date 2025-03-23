@@ -84,3 +84,22 @@ describe("faultSafe", () => {
     expect(true).toBeTruthy();
   });
 });
+
+describe("doc test", () => {
+  it("does what it says", () => {
+    const cache = {};
+    const StandardAdd = (a, b) => a + b;
+
+    onStep((result, target, index) => (cache[index] = { result, target }))
+      .faultSafe()
+      .pipe(1, [StandardAdd, 2], [StandardAdd, 3], [StandardAdd, 4]);
+
+    expect(cache).toMatchObject({
+      "0": { result: 1, target: 1 },
+      "1": { result: 3 },
+      "2": { result: 6 },
+      "3": { result: 10 },
+    });
+  });
+});
+

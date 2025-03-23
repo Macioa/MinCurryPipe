@@ -163,7 +163,7 @@ const StandardAdd = (a, b) => a + b;
 ```js
 const result = pipe(1, [StandardAdd, 2], [StandardAdd, 3]); // 6
 const RunPipe = pipe([StandardAdd, 2], [StandardAdd, 3]); // Function
-RunPipe(1) // 6
+RunPipe(1); // 6
 ```
 
 ## function naming
@@ -176,15 +176,15 @@ RunPipe(1) // 6
 
 ```js
 const StandardAdd = (a, b) => a + b;
-const CurriedAdd = curried(StandardAdd)
-const AddOne = CurriedAdd(1)
+const CurriedAdd = curried(StandardAdd);
+const AddOne = CurriedAdd(1);
 ```
 
 ##### use:
 
 ```js
-console.log(CurriedAdd) // [Function curried_StandardAdd] {arity: 2}
-console.log(AddOne) // [Function partial_StandardAdd] {arity: 2, args: 1}
+console.log(CurriedAdd); // [Function curried_StandardAdd] {arity: 2}
+console.log(AddOne); // [Function partial_StandardAdd] {arity: 2, args: 1}
 ```
 
 ## error handling
@@ -202,10 +202,41 @@ const StandardAdd = (a, b) => a + b;
 ##### use:
 
 ```js
-pipe(1, [StandardAdd, 2, 3])
+pipe(1, [StandardAdd, 2, 3]);
 /*
 PipeError: Function failed in pipe:
         StandardAdd3
         Expected(3), Received(2)
 */
+```
+
+## pipe warmers
+
+#### Closure functions to alter the pipe behavior without altering the pipe itself
+
+    * onStep -> Provide a function to be called after each function in the pipe
+    * faultSafe -> Suppress errors, allowing access to the last successful result.
+
+#### Example:
+
+##### with:
+
+```js
+const cache = {}
+const StandardAdd = (a, b) => a + b;
+```
+
+##### use:
+
+```js
+onStep((result, target, index) => (cache[index] = { result, target }))
+  .faultSafe()
+  .pipe(1, [StandardAdd, 2], [StandardAdd, 3], [StandardAdd, 4]);
+console.log(cache);
+/*{
+      "0": { result: 1, target: 1 },
+      "1": { result: 3 },
+      "2": { result: 6 },
+      "3": { result: 10 },
+    }*/
 ```
