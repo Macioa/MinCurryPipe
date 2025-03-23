@@ -14,7 +14,7 @@ type MyFnT = typeof myFn;
 const curriedFn = curried(myFn);
 type CurriedFnT = typeof curriedFn;
 
-const myFn2 = (a: boolean, b: string, c: boolean, d: object) => 1
+const myFn2 = (a: boolean, b: string, c: boolean, d: object) => 1;
 
 const ExpectError = (fn: AnyFn) => {
   let noError;
@@ -116,14 +116,15 @@ describe("curried", () => {
 
 describe("pipe", () => {
   it("interperets functions as arrays and detects arg errors", () => {
-    
-
-    pipe(1, [myFn, "2", true, {}] as const)
-    //@ts-expect-error
-    pipe(1, [myFn, "2", true, 1] as const)
-
-    pipe(1, [myFn, "2", true, {}] as const, [myFn, "2", true, {}] as const)
-    //@ts-expect-error
-    pipe(1, [myFn, "2", true, {}] as const, [myFn2,  true, {}] as const)
+    pipe(1, [myFn, "2", true, {}] as const);
+    pipe(1, [myFn, "2", true, {}] as const, [myFn, "2", true, {}] as const);
+    try {
+      // @ts-expect-error
+      pipe(1, [myFn, "2", true, 1] as const);
+    } catch {}
+    try {
+      //@ts-expect-error
+      pipe(1, [myFn, "2", true, {}] as const, [myFn2, true, {}] as const);
+    } catch {}
   });
 });
