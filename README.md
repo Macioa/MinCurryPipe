@@ -49,4 +49,10 @@ onStep((result, target, index) => {
 * Custom error handling to avoid confuscation caused by function wrappers
 * Inferred function naming for curried functions
 
+```js
+const add = (a: number, b: number, c: number, d: number) => a + b + c + d
+const curriedAdd = curried(add)
+const result = curriedAdd(1)(2,3)(4)
+```
+
 [Full Doc](README_FULL.md)
