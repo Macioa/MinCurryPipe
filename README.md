@@ -48,6 +48,7 @@ onStep((result, target, index) => {
 * Automatic type inference for consumed partial functions and their child partials
 * Custom error handling to avoid confuscation caused by function wrappers
 * Inferred function naming for curried functions
+* Function arity tracking
 
 ```js
 const add = (a: number, b: number, c: number, d: number) => a + b + c + d
