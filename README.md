@@ -39,7 +39,7 @@ onStep((result, target, index) => {
 * Implicit pipelining (like Bash, Ruby, etc...)
 * Composition pipelining (like RxJs, Ramda, etc...)
 * Closure utilities to modify pipe behavior without altering the pipe itself. 
-* "AutoCurrying" to call partial standard functions as arrays without adding function wrappers
+* Call partial standard functions as tuples without adding function wrappers
 * Custom error handling for errors in pipe
 
 #### Curry
