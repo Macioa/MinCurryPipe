@@ -1,4 +1,4 @@
-# Minimal Curry and Dynamic Pipe
+# Minimal Curry and Pipe
 
 One Pipe to rule them all, 
 <BR>
