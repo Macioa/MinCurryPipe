@@ -2,8 +2,8 @@
     "compilerOptions": {
       "target": "es2015", // Set to the desired JavaScript version.
       "module": "es2015", // Modern modules for better tree-shaking.
-      "removeComments": true, // Remove comments.
-      "declaration": false, // Avoid emitting .d.ts files if not needed.
+      "removeComments": false, // Preserve comments including JSDoc.
+      "declaration": true, // Generate .d.ts files.
       "outDir": "./dist", // Specify the output directory.
       "sourceMap": false, // Disable source maps to reduce file size.
       "noEmitHelpers": true, // Avoid helper duplication.

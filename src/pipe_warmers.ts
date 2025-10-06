@@ -2,6 +2,9 @@ import { pipe as basePipe } from "./";
 import { curried } from "./index";
 import { AnyFn } from "./types";
 
+/**
+ * Interface for pipe warmer objects that provide enhanced pipe functionality
+ */
 interface PipeWarmerObj {
   onStep: Function;
   faultSafe: Function;
@@ -17,48 +20,59 @@ const newPipeWarmer = () => {
   return warmer;
 };
 
-/* onStep => Apply operations to each step in pipe
-            Example:
-                const StandardAdd = (a, b) => a + b;
-
-                onStep((
-                  (result, target, index) => console.log("PipeLog: ", {result, index, target})
-                )).pipe(
-                  1,
-                  [add, 3],
-                  [add, 5]
-                )
-
-                // PipeLog: {result: 1, index: 0, target: 1}
-                // PipeLog: {result: 4, index: 1, target: [function add]} 
-                // PipeLog: {result: 9, index: 2, target: [function add]} 
-*/
-
+/**
+ * Apply operations to each step in pipe execution for debugging and monitoring.
+ * 
+ * @param stepFns - Functions to execute at each pipe step
+ * @returns A pipe warmer object with enhanced pipe functionality
+ * 
+ * @example
+ * ```typescript
+ * const StandardAdd = (a, b) => a + b;
+ * 
+ * onStep((
+ *   (result, target, index) => console.log("PipeLog: ", {result, index, target})
+ * )).pipe(
+ *   1,
+ *   [add, 3],
+ *   [add, 5]
+ * )
+ * 
+ * // PipeLog: {result: 1, index: 0, target: 1}
+ * // PipeLog: {result: 4, index: 1, target: [function add]} 
+ * // PipeLog: {result: 9, index: 2, target: [function add]} 
+ * ```
+ */
 const onStep = (
   ...stepFns: ((result: any, target: any, index: number) => void)[]
 ) => addOnStep(newPipeWarmer(), ...stepFns);
 
-/* faultSafe => Suppress errors to allow computation or logging for partially completed pipes.
-            Example:
-                const StandardAdd = (a, b) => a + b;
-
-                onStep((
-                  (result, target, index) => console.log("PipeLog: ", {result, index, target})
-                ))
-                .faultSafe()
-                .pipe(
-                  1,
-                  [add, 3],
-                  [add, 5],
-                  (...args) => throw "ERROR! Does not compute!",
-                  [add, 7]
-                )
-
-                // PipeLog: {result: 1, index: 0, target: 1}
-                // PipeLog: {result: 4, index: 1, target: [function add]} 
-                // PipeLog: {result: 9, index: 2, target: [function add]} 
-*/
-
+/**
+ * Suppress errors to allow computation or logging for partially completed pipes.
+ * 
+ * @returns A pipe warmer object with fault-safe pipe functionality
+ * 
+ * @example
+ * ```typescript
+ * const StandardAdd = (a, b) => a + b;
+ * 
+ * onStep((
+ *   (result, target, index) => console.log("PipeLog: ", {result, index, target})
+ * ))
+ * .faultSafe()
+ * .pipe(
+ *   1,
+ *   [add, 3],
+ *   [add, 5],
+ *   (...args) => throw "ERROR! Does not compute!",
+ *   [add, 7]
+ * )
+ * 
+ * // PipeLog: {result: 1, index: 0, target: 1}
+ * // PipeLog: {result: 4, index: 1, target: [function add]} 
+ * // PipeLog: {result: 9, index: 2, target: [function add]} 
+ * ```
+ */
 const faultSafe = () => addFaultSafe(newPipeWarmer());
 
 const addFaultSafe = (pipeWarmer: PipeWarmerObj) => {

@@ -2,25 +2,37 @@ import { onStep, faultSafe } from "./pipe_warmers";
 import PipeError from "./pipe_error";
 import { AnyFn, CurriedFn, ValidatePipeFns, PipeSim } from "./types";
 
-// An interface for standard function calls expressed as an array to avoid invocation and allow a partial function to be formed.
-//    Ex: CurriedAdd(1) | [StandardAdd, 1]
+/**
+ * An interface for standard function calls expressed as an array to avoid invocation and allow a partial function to be formed.
+ * @example CurriedAdd(1) | [StandardAdd, 1]
+ */
 type CurriedProps = Function | [Function, ...args: any[]];
 
-// Reusable interface for all pipe functions in MinCurryPipe
+/**
+ * Reusable interface for all pipe functions in MinCurryPipe
+ */
 interface PipeFn {
   (...args: [CurriedProps | any, ...CurriedProps[]]): any;
 }
 
-/* curried => Convert a function to a curried function.
-            Example: 
-                const StandardAdd = (a, b) => a + b;
-                const StandardAdd3 = (a, b, c) => a + b + c;
-                console.log(StandardAdd(1, 2)); // 3
-                const CurriedAdd = curried(StandardAdd);
-                console.log(CurriedAdd(1)(2)); // 3
-                const CurriedAdd3 = curried(StandardAdd3);
-                console.log(CurriedAdd3(1)(2,3)); // 6
-    */
+/**
+ * Convert a function to a curried function.
+ * 
+ * @template Fn - The function type to curry
+ * @param fn - The function to convert to curried form
+ * @returns A curried version of the input function
+ * 
+ * @example
+ * ```typescript
+ * const StandardAdd = (a, b) => a + b;
+ * const StandardAdd3 = (a, b, c) => a + b + c;
+ * console.log(StandardAdd(1, 2)); // 3
+ * const CurriedAdd = curried(StandardAdd);
+ * console.log(CurriedAdd(1)(2)); // 3
+ * const CurriedAdd3 = curried(StandardAdd3);
+ * console.log(CurriedAdd3(1)(2,3)); // 6
+ * ```
+ */
 const curried = <Fn extends AnyFn>(fn: Fn) => {
   const arity = fn.length;
   const curry = (...argsList: any[]) => {
@@ -50,6 +62,13 @@ const curried = <Fn extends AnyFn>(fn: Fn) => {
   return curry as unknown as CurriedFn<Fn>;
 };
 
+/**
+ * Convert all functions in a list to curried form, handling both standard functions and function arrays.
+ * 
+ * @param list - Array of functions or function arrays to curry
+ * @returns Array of curried functions
+ * @throws {PipeError} When a function array has incorrect arity
+ */
 const curryAll = (list: any[]) => {
   const isStandardFunction = (v) =>
     Array.isArray(v) && typeof v[0] === "function";
@@ -64,6 +83,14 @@ const curryAll = (list: any[]) => {
   });
 };
 
+/**
+ * Safely execute a function with async support, handling both synchronous and asynchronous values.
+ * 
+ * @param fn - The function to execute
+ * @param v - The value to pass to the function
+ * @returns The result of the function execution
+ * @throws {PipeError} When the function returns another function or execution fails
+ */
 const asyncTryFn = (fn, v) => {
   try {
     const res = v?.then ? (async () => fn(await v))() : fn(v);
@@ -75,23 +102,33 @@ const asyncTryFn = (fn, v) => {
   }
 };
 
-/* pipeArg => Pipe an object or value through a series of curried functions.
-            Example:
-                const StandardAdd = (a, b) => a + b;
-                const StandardAdd3 = (a, b, c) => a + b + c;
-                const CurriedAdd = (a) => (b) => a + b;
-                const AltCurriedAdd = curried(StandardAdd);
-                const CurriedAdd3 = curried(StandardAdd3);
-  
-                const result = pipeArg(
-                    1,
-                    CurriedAdd(2),
-                    AltCurriedAdd(3)
-                    CurriedAdd3(4, 5)
-                ); // 15
-  
-                const errorResult = pipe(1, StandardAdd(1)) // Error
-    */
+/**
+ * Pipe an object or value through a series of curried functions.
+ * 
+ * @template T - The tuple type of functions
+ * @template F - The type of the initial value
+ * @param initialValue - The initial value to pipe through the functions
+ * @param fns - Array of curried functions to apply
+ * @returns The result after applying all functions
+ * 
+ * @example
+ * ```typescript
+ * const StandardAdd = (a, b) => a + b;
+ * const StandardAdd3 = (a, b, c) => a + b + c;
+ * const CurriedAdd = (a) => (b) => a + b;
+ * const AltCurriedAdd = curried(StandardAdd);
+ * const CurriedAdd3 = curried(StandardAdd3);
+ * 
+ * const result = pipeArg(
+ *     1,
+ *     CurriedAdd(2),
+ *     AltCurriedAdd(3),
+ *     CurriedAdd3(4, 5)
+ * ); // 15
+ * 
+ * const errorResult = pipe(1, StandardAdd(1)) // Error
+ * ```
+ */
 const pipeArg = <const T extends readonly (unknown[] | AnyFn)[], F extends any>(
   ...[initialValue, ...fns]: [F, ...ValidatePipeFns<T, F>]
 ) =>
@@ -107,22 +144,30 @@ const pipeArg = <const T extends readonly (unknown[] | AnyFn)[], F extends any>(
     return asyncTryFn(fn, acc);
   }, initialValue);
 
-/* pipeFns => Pipe a series of curried functions together.
-            Example:
-                const StandardAdd = (a, b) => a + b;
-
-                const CurriedAdd = (a) => (b) => a + b;
-                const AltCurriedAdd = curried(StandardAdd);
-  
-                const RunPipe = pipeFns(
-                    CurriedAdd(2),
-                    AltCurriedAdd(3)
-                ); 
-                const result = RunPipe(1); // 6
-  
-                const ErrorPipe = pipeFns(StandardAdd(1), StandardAdd(1)) 
-                const errorResult = ErrorPipe(1) // Error
-    */
+/**
+ * Pipe a series of curried functions together to create a new composed function.
+ * 
+ * @template T - The tuple type of functions
+ * @param fns - Array of curried functions to compose
+ * @returns A new function that applies all functions in sequence
+ * 
+ * @example
+ * ```typescript
+ * const StandardAdd = (a, b) => a + b;
+ * 
+ * const CurriedAdd = (a) => (b) => a + b;
+ * const AltCurriedAdd = curried(StandardAdd);
+ * 
+ * const RunPipe = pipeFns(
+ *     CurriedAdd(2),
+ *     AltCurriedAdd(3)
+ * ); 
+ * const result = RunPipe(1); // 6
+ * 
+ * const ErrorPipe = pipeFns(StandardAdd(1), StandardAdd(1)) 
+ * const errorResult = ErrorPipe(1) // Error
+ * ```
+ */
 const pipeFns = <const T extends readonly (unknown[] | AnyFn)[]>(
   ...fns: [...PipeSim<T>]
 ) => {
@@ -134,7 +179,15 @@ const pipeFns = <const T extends readonly (unknown[] | AnyFn)[]>(
   return newFn;
 };
 
-/* pipe => Dynamically pipeFns or pipeArg */
+/**
+ * Dynamically pipe functions or pipe arguments based on the first parameter type.
+ * 
+ * @template T - The tuple type of functions
+ * @template F - The type of the first parameter
+ * @param F - The first parameter (value or function)
+ * @param P - Array of functions to pipe
+ * @returns The result of piping, which varies based on input type
+ */
 const pipe = <const T extends readonly (unknown[] | AnyFn)[], F extends any>(
   ...[F, ...P]: [F, ...ValidatePipeFns<T, F>]
 ) => {
